@@ -1,0 +1,13 @@
+# Visual Studio related files
+.vs/
+*.user
+*.suo
+*.vcxproj
+*.vcxproj.filters
+
+# Build results
+[Bb]in/
+[Oo]bj/
+
+# NuGet
+*.nupkg
