@@ -35,7 +35,7 @@ namespace PiBackend.Services
             _observers.Remove(observer);
         }
 
-        private void NotifyObservers(double data)
+        public void NotifyObservers(double data)
         {
             foreach (var observer in _observers)
             {

@@ -37,33 +37,67 @@ namespace PiBackend.Services
         // Methode om de data te verwerken zoals voorheen, maar nu met extra logica om de laatste waarden op te slaan
         public double ProcessData(string data, string sensorType)
         {
-            double standardizedData = _strategy.ConvertData(data);
-            _lastTimestamp = DateTime.UtcNow;
-
-            // Controleer of de data geldig is (geen NaN of Infinity)
-            if (double.IsNaN(standardizedData) || double.IsInfinity(standardizedData))
+            try
             {
-                Console.WriteLine($"[ERROR] Invalid data received: {standardizedData}");
-                return double.NaN; // Je kan ook overwegen hier een default waarde te gebruiken
-            }
+                // Probeer de data te converteren met de strategie
+                double standardizedData = _strategy.ConvertData(data);
+                _lastTimestamp = DateTime.UtcNow;
 
-            // Gebruik nu de sensorType-parameter in plaats van SensorTypeManager
-            if (sensorType == "Temperature")
-            {
-                _latestTemperature = standardizedData;
-                _maxTemperatureToday = Math.Max(_maxTemperatureToday, standardizedData);
-                _minTemperatureToday = Math.Min(_minTemperatureToday, standardizedData);
-            }
-            else if (sensorType == "Humidity")
-            {
-                _latestHumidity = standardizedData;
-                _maxHumidityToday = Math.Max(_maxHumidityToday, standardizedData);
-                _minHumidityToday = Math.Min(_minHumidityToday, standardizedData);
-            }
+                // Controleer of de data geldig is (geen NaN of Infinity)
+                if (double.IsNaN(standardizedData) || double.IsInfinity(standardizedData))
+                {
+                    Console.WriteLine($"[ERROR] Invalid data received: {standardizedData}");
+                    return double.NaN;
+                }
 
-            return standardizedData;
+                // Gebruik nu de sensorType-parameter in plaats van SensorTypeManager
+                if (sensorType == "Temperature")
+                {
+                    if (ValidateSensorData(standardizedData)) // Validatie controle
+                    {
+                        _latestTemperature = standardizedData;
+                        _maxTemperatureToday = Math.Max(_maxTemperatureToday, standardizedData);
+                        _minTemperatureToday = Math.Min(_minTemperatureToday, standardizedData);
+                    }
+                    else
+                    {
+                        Console.WriteLine("[ERROR] Temperature data out of range.");
+                        return double.NaN;
+                    }
+                }
+                else if (sensorType == "Humidity")
+                {
+                    _latestHumidity = standardizedData;
+                    _maxHumidityToday = Math.Max(_maxHumidityToday, standardizedData);
+                    _minHumidityToday = Math.Min(_minHumidityToday, standardizedData);
+                }
+
+                return standardizedData;
+            }
+            catch (FormatException ex)
+            {
+                Console.WriteLine($"[ERROR] Data format issue: {ex.Message}");
+                return double.NaN;
+            }
+            catch (InvalidOperationException ex)
+            {
+                Console.WriteLine($"[ERROR] Operation issue: {ex.Message}");
+                return double.NaN;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERROR] An unexpected error occurred: {ex.Message}");
+                return double.NaN;
+            }
         }
 
+
+        // Validatie methode voor temperatuur
+        public bool ValidateSensorData(double temperature)
+        {
+            // Check if temperature is within an acceptable range (0 to 50 degrees Celsius)
+            return temperature >= 0 && temperature <= 50;
+        }
 
         // Nieuwe methodes om de laatste waarden en aggregaties op te vragen
         public double GetLatestTemperature()
